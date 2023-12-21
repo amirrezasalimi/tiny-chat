@@ -1,0 +1,251 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>TinyChat</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-[#2A2A2A] p-0 m-0 text-white">
+    <div id="app" class="md:container flex flex-col md:mx-auto mx-0 bg-[#2E2E2E]  w-full md:w-[728px] h-screen">
+
+        <div class="flex flex-col h-full">
+            <!-- head -->
+            <div class="flex flex-row justify-between items-center p-4 select-none">
+                <h1 class="text-2xl font-medium text-center">
+                    TinyChat {{
+                    showConfig ? "Config" : ""
+                    }}
+                </h1>
+                <div>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                        class="cursor-pointer" :class="{'text-white':!showConfig,'text-[#919191]':showConfig}"
+                        @click="showConfig=!showConfig">
+                        <path
+                            d="M11.6439 3C10.9352 3 10.2794 3.37508 9.92001 3.98596L9.49643 4.70605C8.96183 5.61487 7.98937 6.17632 6.935 6.18489L6.09966 6.19168C5.39095 6.19744 4.73822 6.57783 4.38385 7.19161L4.02775 7.80841C3.67338 8.42219 3.67031 9.17767 4.01968 9.7943L4.4315 10.5212C4.95126 11.4386 4.95126 12.5615 4.4315 13.4788L4.01968 14.2057C3.67031 14.8224 3.67338 15.5778 4.02775 16.1916L4.38385 16.8084C4.73822 17.4222 5.39095 17.8026 6.09965 17.8083L6.93501 17.8151C7.98938 17.8237 8.96184 18.3851 9.49644 19.294L9.92001 20.014C10.2794 20.6249 10.9352 21 11.6439 21H12.3561C13.0648 21 13.7206 20.6249 14.08 20.014L14.5035 19.294C15.0381 18.3851 16.0106 17.8237 17.065 17.8151L17.9004 17.8083C18.6091 17.8026 19.2618 17.4222 19.6162 16.8084L19.9723 16.1916C20.3267 15.5778 20.3298 14.8224 19.9804 14.2057L19.5686 13.4788C19.0488 12.5615 19.0488 11.4386 19.5686 10.5212L19.9804 9.7943C20.3298 9.17767 20.3267 8.42219 19.9723 7.80841L19.6162 7.19161C19.2618 6.57783 18.6091 6.19744 17.9004 6.19168L17.065 6.18489C16.0106 6.17632 15.0382 5.61487 14.5036 4.70605L14.08 3.98596C13.7206 3.37508 13.0648 3 12.3561 3H11.6439Z"
+                            stroke="white" stroke-width="2" stroke-linejoin="round" />
+                        <path
+                            d="M12 14.5C13.3807 14.5 14.5 13.3807 14.5 12C14.5 10.6193 13.3807 9.5 12 9.5C10.6193 9.5 9.5 10.6193 9.5 12C9.5 13.3807 10.6193 14.5 12 14.5Z"
+                            stroke="white" stroke-width="2" />
+                    </svg>
+
+                </div>
+            </div>
+            <!-- config -->
+            <div v-show="showConfig" class="flex flex-col gap-4 p-4 select-none">
+                <!-- render configFields -->
+                <div v-for="field in configFields" :key="field.name" class="flex flex-col gap-2">
+                    <label class="text-sm text-gray-400">
+                        {{ field.label }}
+                    </label>
+                    <input v-if="field.type=='text'" type="text"
+                        class="bg-transparent border border-[#919191] rounded-lg p-2" v-model="config[field.name]" />
+                    <input v-if="field.type=='number'" type="number"
+                        class="bg-transparent border border-[#919191] rounded-lg p-2" v-model="config[field.name]" />
+                </div>
+            </div>
+            <!-- messages -->
+            <div class="flex flex-col overflow-y-auto scroll-smooth" id="messages">
+                <div v-for="(message,index) in messages" :key="message.id"
+                    class="flex flex-col odd:bg-[#F7F7F7]/10 group">
+                    <div class="p-4 flex flex-col justify-between gap-4">
+                        <div class="flex flex-row gap-4 capitalize">
+                            <div class="text-gray-400 text-sm">
+                                {{ message.role }}
+                            </div>
+                            <div class="flex flex-col w-full">
+                                <textarea
+                                    class="size-full outline-0 bg-transparent border-none text-white rounded-lg resize-none"
+                                    :rows="message.content.split('\n').length" v-model="message.content"></textarea>
+                                <div class="mt-4" v-if="index==messages.length-1 && message.role=='assistant'">
+                                    <svg stroke="currentColor" fill="none" stroke-width="1.5" viewBox="0 0 24 24"
+                                        stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em"
+                                        xmlns="http://www.w3.org/2000/svg" v-if="index==messages.length-1"
+                                        class="group-hover:block cursor-pointer h-3 w-3" @click="refresh"
+                                        :class="{'animate-spin':isLoading}">
+                                        >
+                                        >
+                                        >
+                                        <polyline points="1 4 1 10 7 10"></polyline>
+                                        <polyline points="23 20 23 14 17 14"></polyline>
+                                        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15">
+                                        </path>
+
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- send message -->
+        <div class="flex flex-row justify-between items-center p-4" v-if="!showConfig">
+            <div class="w-full flex flex-row border border-1 border-[#919191] rounded-xl px-4 py-6 items-center">
+                <textarea
+                    class="w-full h-full outline-0 bg-transparent border-none text-white resize-none text-md max-h-[100px]"
+                    v-on:keyup.enter="sendMessage" placeholder="Type a message" :rows="message.split('\n').length"
+                    v-model="message"></textarea>
+                <div class="flex flex-col justify-end gap-4 text-[#2E2E2E] rounded-md p-1"
+                    :class="{'bg-white':message!='','bg-white/10':message==''}">
+                    <button @click="sendMessage">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <script type="module">
+        import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+        import { SSE } from "https://cdn.jsdelivr.net/npm/sse.js@2.1.0/lib/sse.min.js"
+
+        createApp({
+            data() {
+                return {
+                    showConfig: false,
+                    configFields: [
+                        {
+                            name: "endPoint",
+                            type: "text",
+                            label: "End Point"
+                        },
+                        {
+                            name: "apiKey",
+                            type: "text",
+                            label: "API Key"
+                        },
+                        {
+                            name: "model",
+                            type: "text",
+                            label: "Model"
+                        },
+                        {
+                            name: "temperature",
+                            type: "number",
+                            label: "Temperature"
+                        },
+                        {
+                            name: "presence_penalty",
+                            type: "number",
+                            label: "Presence Penalty"
+                        },
+                        {
+                            name: "top_p",
+                            type: "number",
+                            label: "Top P"
+                        },
+                        {
+                            name: "frequency_penalty",
+                            type: "number",
+                            label: "Frequency Penalty"
+                        },
+                    ],
+                    isLoading: false,
+                    message: '',
+                    messages: [],
+                    config: {
+                        endPoint: "",
+                        apiKey: "",
+                        model: "gpt-3.5-turbo",
+                        temperature: 1,
+                        presence_penalty: 0,
+                        top_p: 1,
+                        frequency_penalty: 0,
+                        "stream": true
+                    }
+                }
+
+            },
+            methods: {
+                refresh() {
+                    this.send(true);
+                },
+                sendMessage() {
+                    this.messages.push({
+                        role: "user",
+                        content: this.message
+                    });
+                    this.send();
+                    this.message = "";
+                },
+                send(refresh = false) {
+                    this.isLoading = true;
+                    let data = {
+                        "messages": this.messages,
+                        ...this.config
+                    }
+
+                    if (refresh) {
+                        this.messages.pop();
+                        this.messages.push({
+                            role: "assistant",
+                            content: ""
+                        });
+                    }
+                    let addedMsg = false;
+                    var source = new SSE(this.config.endPoint, {
+                        headers: {
+                            "accept": "*/*",
+                            'content-type': 'application/json',
+                            authorization: 'Bearer ' + this.config.apiKey,
+                        },
+                        payload: JSON.stringify(data),
+                        method: 'POST'
+                    });
+                    source.addEventListener('message', (e) => {
+                        if (!addedMsg && !refresh) {
+                            this.messages.push({
+                                role: "assistant",
+                                content: ""
+                            });
+                            addedMsg = true;
+                        }
+                        try {
+                            var payload = JSON.parse(e.data);
+                            if (payload.choices[0].finish_reason == "stop") {
+                                this.isLoading = false;
+                                return;
+                            }
+                            const message = payload.choices[0].delta.content;
+                            if (message) {
+                                this.messages[this.messages.length - 1].content += message;
+                            }
+                        } catch (e) {
+                        }
+                    });
+                    source.addEventListener('error', (error) => {
+                        console.error('Error:', error);
+                        source.close();
+                        this.isLoading = false;
+                    });
+                }
+            },
+            watch: {
+                config: {
+                    deep: true,
+                    handler(newConfig) {
+                        if (newConfig) {
+                            localStorage.setItem("config", JSON.stringify(newConfig));
+                        }
+                    }
+                }
+            },
+            mounted() {
+                if (localStorage.getItem("config")) {
+                    this.config = JSON.parse(localStorage.getItem("config"));
+                }
+            },
+        }).mount('#app')
+    </script>
+</body>
+
+</html>
